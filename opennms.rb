@@ -1,23 +1,7 @@
-module MCollective
-    module Agent
-        class OpenNMS<RPC::Agent
-            # Agent to automatically provision nodes and reports in OpenNMS
-            metadata :name          => "OpenNMS RPC Agent",
-                     :description   => "Generates report configurations for, and sends provisioning requests to OpenNMS",
-                     :author        => "Deven Phillips",
-                     :license       => "GPLv2",
-                     :version       => "0.1",
-                     :url           => "
-                                 
+#!/usr/bin/ruby
 
-            def reports_action
-                validate :msg, String
+require 'mcollective'
 
-                reply.data = request[:msg]
-            end
+include MCollective::RPC
 
-            def provision_action
-            end
-        end
-    end
-end
+mc = rpcclient("inventory")

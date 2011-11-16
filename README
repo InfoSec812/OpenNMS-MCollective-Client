@@ -1,0 +1,1 @@
+This is intended to eventually be an mcollective agent AND an OpenNMS ReST client which will allow for the automated provision of nodes from facts gleaned from MCollective.

@@ -69,16 +69,9 @@ end
 
 nodes.each do |node|
     facts = node[:data][:facts]
-    if (facts["onmsReports"]!=nil) 
-        facts["onmsReports"].split(",").each do |report|
-            (repName,repType,repData) = report.split("|")
-            
-        end
+    if (facts==nil)
+      printf("Error on facts")
+    else
+      printf("Facts: %s\n", facts['puppetEnvironment'])
     end
 end
-
-doc = REXML::Document.new XmlSimple.xml_out(facts, 'AttrPrefix' => true, 'RootName' => 'ReportsList')
-d = ''
-doc.write(d)
-puts "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-puts "#{d}\n"

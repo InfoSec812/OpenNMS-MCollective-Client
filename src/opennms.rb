@@ -14,64 +14,32 @@ nodes = util.inventory
 kscReports = ''
 
 class Report
-    def title
-        @title
-    end
-    
-    def title=(title)
-        @title = title
-    end
-    
-    def id
-        @id
-    end
-    
-    def id=(id)
-        @id = id
-    end
-    
-    def show_timespan_button
-        @show_timespan_button
-    end
-    
-    def show_timespan_button=(show_timespan_button)
-        @show_timespan_button = show_timespan_button
-    end
-    
-    def show_graphtype_button
-        @show_graphtype_button
-    end
-    
-    def show_graphtype_button=(show_graphtype_button)
-        @show_graphtype_button = show_graphtype_button
-    end
-    
-    def graphs_per_line
-        @graphs_per_line
-    end
-
-    def graphs_per_line=(graphs_per_line)
-        @graphs_per_line = graphs_per_line
-    end
-
-    def graphs
-        @graphs[]
-    end
-
-    def addGraph(graph)
-        @graphs += graph
-    end
-
-    def getGraphs()
-        return @graphs
+    def updateKscReports(reportData)
+      
     end
 end
 
+Hash reportData 
 nodes.each do |node|
     facts = node[:data][:facts]
     if (facts==nil)
       printf("Error on facts")
     else
-      printf("Facts: %s\n", facts['puppetEnvironment'])
+      nodeReports = facts['onmsReports'] ;
+      if (nodeReports!=nil)
+        nodeReports.split(",").each do |reportConfig|
+          reportSettings = reportConfig.split("|")
+          reportName = reportSettings[0]
+          if (reportData[reportName]!=nil)
+          else
+            reportData[reportName] = Hash.new(nil) ;
+            reportData[reportName]['node'] = facts['hostname']
+            reportData[reportName]['']
+          end
+        end
+      end
     end
 end
+
+reportUpdater = Report.new(nil, nil)
+reportUpdater.updateKscReports(reportData)

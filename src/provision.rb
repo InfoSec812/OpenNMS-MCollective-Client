@@ -2,7 +2,7 @@ class MCollective::Application::Provision<MCollective::Application
     description "An application which generates an OpenNMS provisioning requisition based on command-line arguments, filters, and node facts"
 
     option  :source,
-            :description    => "The foreign source ID for this requisition, defaults to \"defaulti\"",
+            :description    => "The foreign source ID for this requisition, defaults to \"default\"",
             :arguments      => ["--source SOURCE"],
             :default        => "default",
             :type           => String

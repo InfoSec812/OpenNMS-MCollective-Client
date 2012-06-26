@@ -5,19 +5,19 @@ class MCollective::Application::Provision<MCollective::Application
             :description    => "The foreign source ID for this requisition, defaults to \"defaulti\"",
             :arguments      => ["--source SOURCE"],
             :default        => "default",
-            :type           => :string
+            :type           => String
 
     option  :categories,
             :description    => "A comma separated list of categories to assign to the selected nodes, defaults to \"Development\"",
             :arguments      => ["--categories CATEGORIES"],
             :default        => "Development",
-            :type           => :string
+            :type           => String
 
     option  :services,
             :description    => "A comma separated list of services which should be monitored for the selected nodes",
             :arguments      => ["--services SERVICES"],
             :default        => "ICMP,SNMP",
-            :type           => :string
+            :type           => String
 
     def main
         source = configuration[:source]

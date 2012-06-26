@@ -14,7 +14,7 @@ class MCollective::Application::Provision<MCollective::Application
             :type           => String
 
     option  :services,
-            :description    => "A comma separated list of services which should be monitored for the selected nodes",
+            :description    => "A comma separated list of services which should be monitored for the selected nodes, defaults to ICMP and SNMP",
             :arguments      => ["--services SERVICES"],
             :default        => "ICMP,SNMP",
             :type           => String

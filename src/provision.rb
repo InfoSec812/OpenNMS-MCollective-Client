@@ -44,13 +44,13 @@ class MCollective::Application::Provision<MCollective::Application
             puts "\t<node node-label=\"%s\" foreign-id=\"%d\" >\n" % [identity, baseid]
             puts "\t\t<interface ip-addr=\"%s\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">\n" % [ethAddr]
            
-            configuration[:services].split(',') do |service|
+            configuration[:services].split(',').each do |service|
                 puts "\t\t\t<monitored-service service-name=\"%s\"/>" % [service]
             end
              
             puts "\t\t</interface>\n"
             
-            configuration[:categories].split(',') do |category|
+            configuration[:categories].split(',').each do |category|
                 puts "\t\t<category name=\"%s\"/>\n" % [category]
             end
             

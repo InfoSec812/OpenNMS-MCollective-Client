@@ -19,9 +19,30 @@ class MCollective::Application::Provision<MCollective::Application
             :default        => "ICMP,SNMP",
             :type           => String
 
+    option  :url,
+            :description    => "The URL for the OpenNMS server's ReST API",
+            :arguments      => ["--url ONMSURL"],
+            :type           => String
+
+    option  :username,
+            :description    => "The OpenNMS username which we should use for accessing the ReST API",
+            :arguments      => ["--onms-user USERNAME"],
+            :type           => String
+
+    option  :password,
+            :description    => "Password to be used for accessing the OpenNMS server's ReST API",
+            :arguments      => ["--onms-pass PASSWORD"],
+            :type           => String
+
+    option  :reqpath,
+            :description    => "Path to the directory where OpenNMS requisitions are placed in order to be imported",
+            :arguments      => ["--reqpath PATH"],
+            :type           => String,
+            :default        => "/etc/opennms/imports/pending"
+
     def main
         source = configuration[:source]
-	time = Time.now
+        time = Time.now
         
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
         
@@ -38,6 +59,12 @@ class MCollective::Application::Provision<MCollective::Application
             facts = resp[:data][:facts]
             identity = facts['puppetHostName']
             ethAddr = facts['ipaddress_eth0']
+            foreign-source = "default"
+            
+            if facts['onms-source']
+                foreign-source = facts['onms-source']
+                
+            end
                        
             baseid = baseid+1
             

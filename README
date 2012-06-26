@@ -1,1 +1,11 @@
-This is intended to eventually be an mcollective client plugin AND an OpenNMS ReST client which will allow for the automated provision of nodes from facts gleaned from MCollective.
+This is an MCollective application file which allows mcollective to generate a provisioning requisition for OpenNMS network management system.
+
+Usage:
+
+    mco provision --services ICMP,SSH,DNS --categories Production,Servers --source default -C snmpd
+
+--services 	- A comma separated list of services which should be monitored
+--categories 	- A comma separated list of categories which these nodes should be assigned to
+--source	- An OpenNMS foreign source name (Uses "default" if none is specified)
+
+All other mco filters work as expected.

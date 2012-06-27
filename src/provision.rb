@@ -24,23 +24,28 @@ class MCollective::Application::Provision<MCollective::Application
             :arguments      => ["--url ONMSURL"],
             :type           => String
 
-    option  :username,
+    option  :user,
             :description    => "The OpenNMS username which we should use for accessing the ReST API",
-            :arguments      => ["--onms-user USERNAME"],
+            :arguments      => ["--user USERNAME"],
             :type           => String
 
-    option  :password,
+    option  :pass,
             :description    => "Password to be used for accessing the OpenNMS server's ReST API",
-            :arguments      => ["--onms-pass PASSWORD"],
+            :arguments      => ["--pass PASSWORD"],
             :type           => String
 
-    option  :reqpath,
-            :description    => "Path to the directory where OpenNMS requisitions are placed in order to be imported",
-            :arguments      => ["--reqpath PATH"],
-            :type           => String,
-            :default        => "/etc/opennms/imports/pending"
+    def validate_configuration(configuration)
+        unless (configuration[:user] && configuration[:pass] && configuration[:url])
+            raise "You must specify server connection information so that requisitions can be sent to the API"
+        end
+    end
 
     def main
+        validate_configuration(configuration)
+
+        require 'rest_client'
+        require 'nokogiri'
+
         source = configuration[:source]
         time = Time.now
         
@@ -48,7 +53,13 @@ class MCollective::Application::Provision<MCollective::Application
         
         offset = (time.utc_offset/60/60*100)
         
-        baseid = (time.to_f*1000).to_i
+        url = configuration[:url]
+        urlParts = url.split('://')
+        proto = urlParts[0]
+        remains = urlParts[1]
+        user = configuration[:user]
+        pass = configuration[:pass]
+        address = proto+"://"+user+":"+pass+"@"+remains
         
         puts "<model-import xmlns=\"http://xmlns.opennms.org/xsd/config/model-import\" date-stamp=\"%s%+05d\" last-import=\"%s%+05d\" foreign-source=\"%s\">\n" % [timestamp, offset, timestamp, offset, source]
         
@@ -59,16 +70,31 @@ class MCollective::Application::Provision<MCollective::Application
             facts = resp[:data][:facts]
             identity = facts['puppetHostName']
             ethAddr = facts['ipaddress_eth0']
-            foreign-source = "default"
+            foreign_source = "default"
+            node_label = facts['fqdn']
             
             if facts['onms-source']
-                foreign-source = facts['onms-source']
-                
+                foreign_source = facts['onms-source']
             end
-                       
-            baseid = baseid+1
+
+            if facts['onms-label']
+                node_label = facts['onms-label']
+            end
             
-            puts "\t<node node-label=\"%s\" foreign-id=\"%d\" >\n" % [identity, baseid]
+            foreign_id = node_label
+            
+            response = RestClient.get address+"requisitions/"+foreign_source
+            xmlData = response.to_str
+            doc = Nokogiri::XML(xmlData)
+            nodes = doc.xpath("//*[@node-label]")
+            nodes.each do |node|
+                if (node.attr('node-label').strip==node_label)
+                    puts "Found the node label and foreign-id\n"
+                    foreign_id = node.attr('foreign-id').strip
+                end
+            end
+            
+            puts "\t<node node-label=\"%s\" foreign-id=\"%s\" >\n" % [node_label, foreign_id]
             puts "\t\t<interface ip-addr=\"%s\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">\n" % [ethAddr]
            
             configuration[:services].split(',').each do |service|

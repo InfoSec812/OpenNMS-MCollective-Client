@@ -45,6 +45,7 @@ class MCollective::Application::Provision<MCollective::Application
 
         require 'rest_client'
         require 'nokogiri'
+        require 'json'
 
         source = configuration[:source]
         time = Time.now
@@ -54,12 +55,11 @@ class MCollective::Application::Provision<MCollective::Application
         offset = (time.utc_offset/60/60*100)
         
         url = configuration[:url]
-        urlParts = url.split('://')
-        proto = urlParts[0]
-        remains = urlParts[1]
         user = configuration[:user]
         pass = configuration[:pass]
-        address = proto+"://"+user+":"+pass+"@"+remains
+        api = RestClient::Resource.new url user pass
+
+        sources = Array.new
         
         puts "<model-import xmlns=\"http://xmlns.opennms.org/xsd/config/model-import\" date-stamp=\"%s%+05d\" last-import=\"%s%+05d\" foreign-source=\"%s\">\n" % [timestamp, offset, timestamp, offset, source]
         
@@ -76,15 +76,20 @@ class MCollective::Application::Provision<MCollective::Application
             if facts['onms-source']
                 foreign_source = facts['onms-source']
             end
-
+            
+            if source.index(foreign_source)==nil
+                source << foreign_source
+            end
+            
             if facts['onms-label']
                 node_label = facts['onms-label']
             end
             
             foreign_id = node_label
             
-            response = RestClient.get address+"requisitions/"+foreign_source
+            response = api.get "requisitions/"+foreign_source
             xmlData = response.to_str
+            puts "\n\n"+xmlData+"\n\n"
             doc = Nokogiri::XML(xmlData)
             nodes = doc.xpath("//*[@node-label]")
             nodes.each do |node|
@@ -94,21 +99,29 @@ class MCollective::Application::Provision<MCollective::Application
                 end
             end
             
-            puts "\t<node node-label=\"%s\" foreign-id=\"%s\" >\n" % [node_label, foreign_id]
-            puts "\t\t<interface ip-addr=\"%s\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">\n" % [ethAddr]
+            node = "\t<node node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" >\n"
+            node << "\t\t<interface ip-addr=\""+ethAddr+"\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">\n"
            
             configuration[:services].split(',').each do |service|
-                puts "\t\t\t<monitored-service service-name=\"%s\"/>" % [service]
+                node << "\t\t\t<monitored-service service-name=\""+service+"\"/>"
             end
              
-            puts "\t\t</interface>\n"
+            node << "\t\t</interface>\n"
             
             configuration[:categories].split(',').each do |category|
-                puts "\t\t<category name=\"%s\"/>\n" % [category]
+                node << "\t\t<category name=\""+category+"\"/>\n"
             end
             
-            puts "\t</node>\n"
+            node << "\t</node>\n"
+
+            restPath = "requisitions/"+foreign_source+"/nodes"
+            ## TODO: Post the NODE XML to the OpenNMS ReST API for addition to the requisition
         end
-	puts "</model-import>\n"
+        
+        sources.each do |source|
+            uri = "requisitions/"+source+"/import"
+            api.put uri
+        end
+        
     end
 end

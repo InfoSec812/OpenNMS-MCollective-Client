@@ -42,11 +42,12 @@ class MCollective::Application::Provision<MCollective::Application
 
     def main
         validate_configuration(configuration)
-
-        require 'rest_client'
+        
+        require 'faraday'
         require 'nokogiri'
         require 'json'
-
+        require 'open-uri'
+        
         source = configuration[:source]
         time = Time.now
         
@@ -57,15 +58,19 @@ class MCollective::Application::Provision<MCollective::Application
         url = configuration[:url]
         user = configuration[:user]
         pass = configuration[:pass]
-        api = RestClient::Resource.new url user pass
-
-        sources = Array.new
+        api = Faraday.new(:url => url) do |faraday|
+            faraday.request     :url_encoded
+            faraday.adapter     Faraday.default_adapter
+            faraday.response    :logger
+        end
+        api.basic_auth user, pass
         
-        puts "<model-import xmlns=\"http://xmlns.opennms.org/xsd/config/model-import\" date-stamp=\"%s%+05d\" last-import=\"%s%+05d\" foreign-source=\"%s\">\n" % [timestamp, offset, timestamp, offset, source]
+        sources = Array.new
         
         util = rpcclient("rpcutil")
         util.progress = false
         
+        # Iterate over the mcollective node responses
         util.inventory do |t, resp|
             facts = resp[:data][:facts]
             identity = facts['puppetHostName']
@@ -87,41 +92,55 @@ class MCollective::Application::Provision<MCollective::Application
             
             foreign_id = node_label
             
-            response = api.get "requisitions/"+foreign_source
-            xmlData = response.to_str
-            puts "\n\n"+xmlData+"\n\n"
+            response = api.get "requisitions/"+URI::encode(foreign_source)
+            xmlData = response.body
+            if xmlData != nil
+                puts "\n\n"+xmlData+"\n\n"
+            else
+                puts "\n\nXML data is nil\n\n"
+            end
             doc = Nokogiri::XML(xmlData)
             nodes = doc.xpath("//*[@node-label]")
             nodes.each do |node|
+                puts "DEBUG: "+node.attr('node-label').strip+" -- "+node_label+"\n"
                 if (node.attr('node-label').strip==node_label)
                     puts "Found the node label and foreign-id\n"
                     foreign_id = node.attr('foreign-id').strip
                 end
             end
             
-            node = "\t<node node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" >\n"
-            node << "\t\t<interface ip-addr=\""+ethAddr+"\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">\n"
-           
+            node = "<node node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" >"
+            node << "<interface ip-addr=\""+ethAddr+"\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">"
+            
             configuration[:services].split(',').each do |service|
-                node << "\t\t\t<monitored-service service-name=\""+service+"\"/>"
+                node << "<monitored-service service-name=\""+service+"\"/>"
             end
-             
-            node << "\t\t</interface>\n"
+            
+            node << "</interface>"
             
             configuration[:categories].split(',').each do |category|
-                node << "\t\t<category name=\""+category+"\"/>\n"
+                node << "<category name=\""+category+"\"/>"
             end
             
-            node << "\t</node>\n"
-
+            node << "</node>"
+            
             restPath = "requisitions/"+foreign_source+"/nodes"
+            puts "\n\n"+node+"\n\n"
+
+            postResponse = api.post do |req|
+                req.url restPath
+                req.headers['Content-Type'] = '"application/xml'
+                req.body = node
+            end
+            puts "\n\n"+postResponse.body+"\n\n"
             ## TODO: Post the NODE XML to the OpenNMS ReST API for addition to the requisition
         end
         
+        # Iterate over the updated sources and tell OpenNMS to import the changes
         sources.each do |source|
             uri = "requisitions/"+source+"/import"
-            api.put uri
+            putResp = api.put uri
+            puts "\n\n"+putResp+"\n\n"
         end
-        
     end
 end

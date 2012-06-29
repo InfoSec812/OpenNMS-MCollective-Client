@@ -92,6 +92,10 @@ class MCollective::Application::Provision<MCollective::Application
             
             foreign_id = facts['fqdn']
             
+            if facts['onms-foreign-id']
+                foreign_id = facts['onms-foreign-id']
+            end
+            
             response = api.get "requisitions/"+URI::encode(foreign_source)
             xmlData = response.body
             if xmlData != nil

@@ -13,6 +13,7 @@ node "mynode.mycompany.tld" {
     $onms-categories = "Production,Servers"             ## A comma separated list of categories to assign this node to in OpenNMS
     $onms-primary-interface = "eth0"                    ## The interface which should be used for monitoring this node
     $onms-label = "${hostname}.recur"                   ## The label which should be used to identify this node in OpenNMS
+    $onms-foreign-id = "1327619063628"                  ## Specify a foreign ID to use instead of the FQDN
 
     . . .
 }

@@ -90,7 +90,7 @@ class MCollective::Application::Provision<MCollective::Application
                 node_label = facts['onms-label']
             end
             
-            foreign_id = node_label
+            foreign_id = facts['fqdn']
             
             response = api.get "requisitions/"+URI::encode(foreign_source)
             xmlData = response.body
@@ -109,7 +109,7 @@ class MCollective::Application::Provision<MCollective::Application
                 end
             end
             
-            node = "<node node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" >"
+            node = "<node xmlns=\"http://xmlns.opennms.org/xsd/config/model-import\" node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" building=\""+foreign_source+"\">"
             node << "<interface ip-addr=\""+ethAddr+"\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">"
             
             configuration[:services].split(',').each do |service|
@@ -124,23 +124,23 @@ class MCollective::Application::Provision<MCollective::Application
             
             node << "</node>"
             
-            restPath = "requisitions/"+foreign_source+"/nodes"
-            puts "\n\n"+node+"\n\n"
+            restPath = "requisitions/"+URI::encode(foreign_source)+"/nodes"
+            puts "\n\nNODE XML\n"+node+"\n\n"
 
             postResponse = api.post do |req|
                 req.url restPath
-                req.headers['Content-Type'] = '"application/xml'
+                req.headers['Content-Type'] = 'application/xml'
                 req.body = node
             end
-            puts "\n\n"+postResponse.body+"\n\n"
+            puts "\n\nPOST RESULT\n"+postResponse.body+"\n\n"
             ## TODO: Post the NODE XML to the OpenNMS ReST API for addition to the requisition
         end
         
         # Iterate over the updated sources and tell OpenNMS to import the changes
         sources.each do |source|
-            uri = "requisitions/"+source+"/import"
+            uri = "requisitions/"+source+"/import?rescanExisting=false"
             putResp = api.put uri
-            puts "\n\n"+putResp+"\n\n"
+            puts "\n\nPUT RESPONSE\n"+putResp+"\n\n"
         end
     end
 end

@@ -47,8 +47,6 @@ class MCollective::Application::Provision<MCollective::Application
         require 'nokogiri'
         require 'json'
         require 'open-uri'
-        
-        source = configuration[:source]
         time = Time.now
         
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -82,8 +80,8 @@ class MCollective::Application::Provision<MCollective::Application
                 foreign_source = facts['onms-source']
             end
             
-            if source.index(foreign_source)==nil
-                source << foreign_source
+            if sources.index(foreign_source)==nil
+                sources.push(foreign_source)
             end
             
             if facts['onms-label']
@@ -97,19 +95,26 @@ class MCollective::Application::Provision<MCollective::Application
             end
             
             response = api.get "requisitions/"+URI::encode(foreign_source)
-            xmlData = response.body
-            if xmlData != nil
-                puts "\n\n"+xmlData+"\n\n"
-            else
-                puts "\n\nXML data is nil\n\n"
-            end
-            doc = Nokogiri::XML(xmlData)
-            nodes = doc.xpath("//*[@node-label]")
-            nodes.each do |node|
-                puts "DEBUG: "+node.attr('node-label').strip+" -- "+node_label+"\n"
-                if (node.attr('node-label').strip==node_label)
-                    puts "Found the node label and foreign-id\n"
-                    foreign_id = node.attr('foreign-id').strip
+            if response.status == 200
+                xmlData = response.body
+                if xmlData != nil
+                    puts "\n\n"+xmlData+"\n\n"
+                else
+                    puts "\n\nXML data is nil\n\n"
+                end
+                doc = Nokogiri::XML(xmlData)
+                nodes = doc.xpath("//*[@node-label]")
+                nodes.each do |node|
+                    puts "DEBUG: "+node.attr('node-label').strip+" -- "+node_label+"\n"
+                    if (node.attr('node-label').strip==node_label)
+                        puts "Found the node label and foreign-id\n"
+                        foreign_id = node.attr('foreign-id').strip
+                    end
+                end
+            else 
+                puts "ERROR: HTTP GET response was "+response.status+".\n"
+                if response.body
+                    puts "\n\n"+response.body+"\n\n"
                 end
             end
             
@@ -130,21 +135,29 @@ class MCollective::Application::Provision<MCollective::Application
             
             restPath = "requisitions/"+URI::encode(foreign_source)+"/nodes"
             puts "\n\nNODE XML\n"+node+"\n\n"
-
+            
             postResponse = api.post do |req|
                 req.url restPath
                 req.headers['Content-Type'] = 'application/xml'
                 req.body = node
             end
-            puts "\n\nPOST RESULT\n"+postResponse.body+"\n\n"
-            ## TODO: Post the NODE XML to the OpenNMS ReST API for addition to the requisition
+            if postResponse.status==200
+                puts "\n\nPOST RESULT\n"+postResponse.body+"\n\n"
+            else
+                puts "ERROR: HTTP Status code was "+postResponse.status+".\n"
+            end
         end
         
         # Iterate over the updated sources and tell OpenNMS to import the changes
-        sources.each do |source|
-            uri = "requisitions/"+source+"/import?rescanExisting=false"
+        puts "INFO: Finished POSTing: Sources array "+sources.to_s+"\n"
+        sources.each do |src|
+            uri = "requisitions/"+URI::encode(src)+"/import?rescanExisting=false"
             putResp = api.put uri
-            puts "\n\nPUT RESPONSE\n"+putResp+"\n\n"
+            if putResp.status==200
+                puts "Successfully PUT the import request.\n"
+            else
+                puts "ERROR: PUT response was "+putResp.status+".\n"
+            end
         end
     end
 end

@@ -1,7 +1,8 @@
 This is an MCollective application file which allows mcollective to generate a provisioning requisition for OpenNMS network management system.
 
-IMPORTANT!!!
-If you have EXISTING nodes provisioned via the OpenNMS web interface, you will need to tell puppet/mcollective about the existing foreign ID. 
+**IMPORTANT!!!**
+
+If you have *EXISTING* nodes provisioned via the OpenNMS web interface, you will need to tell puppet/mcollective about the existing foreign ID. 
 
 This is easily done by going through the web interface to the admin and editing a provisioning group. Each node will typically have a 
 foreign id which is about 13 digits long. Place variables as described below in the "node" definition for your puppet manifest and 

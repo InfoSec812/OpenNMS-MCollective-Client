@@ -8,6 +8,8 @@ This is easily done by going through the web interface to the admin and editing 
 foreign id which is about 13 digits long. Place variables as described below in the "node" definition for your puppet manifest and 
 ensure you are using the YAML based facts for mcollective as detailed at http://projects.puppetlabs.com/projects/mcollective-plugins/wiki/FactsFacterYAML
 
+**EXAMPLE PUPPET CONFIG**
+
     node "mynode.mycompany.tld" {
         $onms-source = "Web Servers"             ## The OpenNMS provisioning group that this node should be a part of
         $onms-services = "ICMP,SNMP"             ## The comma separated list of services which should be monitored
@@ -19,7 +21,7 @@ ensure you are using the YAML based facts for mcollective as detailed at http://
         . . .
     }
 
-Usage:
+**USAGE**
 
     mco provision --url "http://opennms.mycompany.com/opennms/rest/" --user admin --pass myadminpass
 
@@ -30,17 +32,17 @@ Usage:
 All other mco filters work as expected.
 
 
-Examples:
+**EXAMPLE COMMAND LINES**
 
-1. Provision all nodes which have the "ssh" class applied.
+*1. Provision all nodes which have the "ssh" class applied.*
 
     mco provision --url "http://opennms.mycompany.com/opennms/rest/" --user admin --pass myadminpass -C ssh
 
-2. Provision all nodes which have FQDNs containing "web"
+*2. Provision all nodes which have FQDNs containing "web"*
 
     mco provision --url "http://opennms.mycompany.com/opennms/rest/" --user admin --pass myadminpass -F fqdn="/web/"
 
-3. Provision ALL nodes
+*3. Provision ALL nodes*
 
     mco provision --url "http://opennms.mycompany.com/opennms/rest/" --user admin --pass myadminpass
 

@@ -2,10 +2,11 @@ This is an MCollective application file which allows mcollective to generate a p
 
 **PREREQUISITES**
 
-In order to provision nodes in OpenNMS using this tool, you must have already configured the *foreign source/provisioning group* for each node
-in OpenNMS. In the web UI, this is done by going into "Admin->Manage Provisioning Requisitions->Add New Group" and configuring the detectors 
-and policies. Failure to create the *foreign-id/provisioning group* before provisioning nodes with this tool will result in failed 
-provisioning attempts.
+1. A running OpenNMS server with version >=1.10.0 (There was a bug in earlier releases which would cause duplicate nodes to be provisioned)
+2. A decent understanding of how OpenNMS provisioning works in the OpenNMS web interface.
+3. A working marionette collective installation
+4. Configured OpenNMS provisioning groups to which the provisioned nodes will be assigned.
+5. Access from your mcollective client to the OpenNMS ReSTful API (i.e. Access to the OpenNMS web interface).
 
 **IMPORTANT!!!**
 

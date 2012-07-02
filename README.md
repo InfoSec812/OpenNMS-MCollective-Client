@@ -45,3 +45,8 @@ Examples:
     mco provision --url "http://opennms.mycompany.com/opennms/rest/" --user admin --pass myadminpass
 
 
+**INSTALLATION**
+
+Place this in the mcollective *application* directory and that is all it takes:
+
+For example, on Debian based systems, place it in */usr/share/mcollective/plugins/mcollective/application/*

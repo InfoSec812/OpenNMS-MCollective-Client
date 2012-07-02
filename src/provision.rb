@@ -1,24 +1,6 @@
 class MCollective::Application::Provision<MCollective::Application
     description "An application which generates an OpenNMS provisioning requisition based on command-line arguments, filters, and node facts"
 
-    option  :source,
-            :description    => "The foreign source ID for this requisition, defaults to \"default\"",
-            :arguments      => ["--source SOURCE"],
-            :default        => "default",
-            :type           => String
-
-    option  :categories,
-            :description    => "A comma separated list of categories to assign to the selected nodes, defaults to \"Development\"",
-            :arguments      => ["--categories CATEGORIES"],
-            :default        => "Development",
-            :type           => String
-
-    option  :services,
-            :description    => "A comma separated list of services which should be monitored for the selected nodes, defaults to ICMP and SNMP",
-            :arguments      => ["--services SERVICES"],
-            :default        => "ICMP,SNMP",
-            :type           => String
-
     option  :url,
             :description    => "The URL for the OpenNMS server's ReST API",
             :arguments      => ["--url ONMSURL"],
@@ -33,6 +15,12 @@ class MCollective::Application::Provision<MCollective::Application
             :description    => "Password to be used for accessing the OpenNMS server's ReST API",
             :arguments      => ["--pass PASSWORD"],
             :type           => String
+
+    option  :debug,
+            :description    => "Show what actions would be taken, but do not actually perform the actions",
+            :arguments      => ["--debug"],
+            :type           => :bool,
+            :default        => false
 
     def validate_configuration(configuration)
         unless (configuration[:user] && configuration[:pass] && configuration[:url])
@@ -53,13 +41,25 @@ class MCollective::Application::Provision<MCollective::Application
         
         offset = (time.utc_offset/60/60*100)
         
+        debug = false
+        if configuration[:debug]
+            debug = true
+        end
+
         url = configuration[:url]
         user = configuration[:user]
         pass = configuration[:pass]
+
         api = Faraday.new(:url => url) do |faraday|
             faraday.request     :url_encoded
             faraday.adapter     Faraday.default_adapter
-            faraday.response    :logger
+        end
+        if debug
+            api = Faraday.new(:url => url) do |faraday|
+                faraday.request     :url_encoded
+                faraday.adapter     Faraday.default_adapter
+                faraday.response    :logger
+            end
         end
         api.basic_auth user, pass
         
@@ -75,6 +75,17 @@ class MCollective::Application::Provision<MCollective::Application
             ethAddr = facts['ipaddress_eth0']
             foreign_source = "default"
             node_label = facts['fqdn']
+            if facts['onms-categories']
+                categories = facts['onms-categories'].split(',')
+            else
+                categories = "Development".split(',')
+            end
+                        
+            if facts['onms-services']
+                services = facts['onms-services'].split(',')
+            else
+                services = "ICMP,SNMP".split(',')
+            end
             
             if facts['onms-source']
                 foreign_source = facts['onms-source']
@@ -97,17 +108,16 @@ class MCollective::Application::Provision<MCollective::Application
             response = api.get "requisitions/"+URI::encode(foreign_source)
             if response.status == 200
                 xmlData = response.body
-                if xmlData != nil
-                    puts "\n\n"+xmlData+"\n\n"
-                else
+                if xmlData == nil
                     puts "\n\nXML data is nil\n\n"
                 end
                 doc = Nokogiri::XML(xmlData)
                 nodes = doc.xpath("//*[@node-label]")
                 nodes.each do |node|
-                    puts "DEBUG: "+node.attr('node-label').strip+" -- "+node_label+"\n"
                     if (node.attr('node-label').strip==node_label)
-                        puts "Found the node label and foreign-id\n"
+                        if debug
+                            puts "DEBUG: Found existing node: "+node.attr('foreign-id').strip+"\n"
+                        end
                         foreign_id = node.attr('foreign-id').strip
                     end
                 end
@@ -121,42 +131,50 @@ class MCollective::Application::Provision<MCollective::Application
             node = "<node xmlns=\"http://xmlns.opennms.org/xsd/config/model-import\" node-label=\""+node_label+"\" foreign-id=\""+foreign_id+"\" building=\""+foreign_source+"\">"
             node << "<interface ip-addr=\""+ethAddr+"\" descr=\"eth0\" status=\"1\" snmp-primary=\"P\">"
             
-            configuration[:services].split(',').each do |service|
+            services.each do |service|
                 node << "<monitored-service service-name=\""+service+"\"/>"
             end
             
             node << "</interface>"
             
-            configuration[:categories].split(',').each do |category|
+            categories.each do |category|
                 node << "<category name=\""+category+"\"/>"
             end
             
             node << "</node>"
             
             restPath = "requisitions/"+URI::encode(foreign_source)+"/nodes"
-            puts "\n\nNODE XML\n"+node+"\n\n"
-            
-            postResponse = api.post do |req|
-                req.url restPath
-                req.headers['Content-Type'] = 'application/xml'
-                req.body = node
+
+            if debug
+                puts "DEBUG: Sending request to "+restPath+"\n\n"
+                puts node+"\n\n"
             end
-            if postResponse.status==200
-                puts "\n\nPOST RESULT\n"+postResponse.body+"\n\n"
+            
+            if (!(debug))
+                postResponse = api.post do |req|
+                    req.url restPath
+                    req.headers['Content-Type'] = 'application/xml'
+                    req.body = node
+                end
+                if postResponse.status!=200
+                    puts "ERROR: HTTP Status code was "+postResponse.status+".\n"
+                end
             else
-                puts "ERROR: HTTP Status code was "+postResponse.status+".\n"
+                puts "DEBUG: Sending node request to "+url+restPath+".\n\n"
+                puts node+"\n\n"
             end
         end
         
         # Iterate over the updated sources and tell OpenNMS to import the changes
-        puts "INFO: Finished POSTing: Sources array "+sources.to_s+"\n"
         sources.each do |src|
             uri = "requisitions/"+URI::encode(src)+"/import?rescanExisting=false"
-            putResp = api.put uri
-            if putResp.status==200
-                puts "Successfully PUT the import request.\n"
+            if (!(debug))
+                putResp = api.put uri
+                if putResp.status!=200
+                    puts "ERROR: PUT response was "+putResp.status+".\n"
+                end
             else
-                puts "ERROR: PUT response was "+putResp.status+".\n"
+                puts "DEBUG: Sending import request to "+url+uri+".\n\n"
             end
         end
     end

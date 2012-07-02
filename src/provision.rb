@@ -4,16 +4,19 @@ class MCollective::Application::Provision<MCollective::Application
     option  :url,
             :description    => "The URL for the OpenNMS server's ReST API",
             :arguments      => ["--url ONMSURL"],
+            :default        => " ",
             :type           => String
 
     option  :user,
             :description    => "The OpenNMS username which we should use for accessing the ReST API",
             :arguments      => ["--user USERNAME"],
+            :default        => " ",
             :type           => String
 
     option  :pass,
             :description    => "Password to be used for accessing the OpenNMS server's ReST API",
             :arguments      => ["--pass PASSWORD"],
+            :default        => " ",
             :type           => String
 
     option  :debug,
@@ -22,19 +25,12 @@ class MCollective::Application::Provision<MCollective::Application
             :type           => :bool,
             :default        => false
 
-    def validate_configuration(configuration)
-        unless (configuration[:user] && configuration[:pass] && configuration[:url])
-            raise "You must specify server connection information so that requisitions can be sent to the API"
-        end
-    end
-
     def main
-        validate_configuration(configuration)
-        
         require 'faraday'
         require 'nokogiri'
         require 'json'
         require 'open-uri'
+        
         time = Time.now
         
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -46,22 +42,54 @@ class MCollective::Application::Provision<MCollective::Application
             debug = true
         end
 
-        url = configuration[:url]
-        user = configuration[:user]
-        pass = configuration[:pass]
-
-        api = Faraday.new(:url => url) do |faraday|
+        $url = " "
+        $user = " "
+        $pass = " "
+        
+        if MCollective::Config.instance.pluginconf['provision.url']
+            $url = MCollective::Config.instance.pluginconf['provision.url']
+        end
+        
+        if MCollective::Config.instance.pluginconf['provision.user']
+            $user = MCollective::Config.instance.pluginconf['provision.user']
+        end
+        
+        if MCollective::Config.instance.pluginconf['provision.pass']
+            $pass = MCollective::Config.instance.pluginconf['provision.pass']
+        end
+        
+        puts "DEBUG: "+$url+" | "+$user+" | "+$pass+"\n"
+        
+        if configuration[:url].strip.length>0
+            $url = configuration[:url]
+        end
+        
+        if configuration[:user].strip.length>0
+            $user = configuration[:user]
+        end
+        
+        if configuration[:pass].strip.length>0
+            $pass = configuration[:pass]
+        end
+        
+        puts "DEBUG: "+$url+" | "+$user+" | "+$pass+"\n"
+        
+        unless ($url.strip.length>0 && $user.strip.length>0 && $pass.strip.length>0)
+            raise "You must specify server connection information so that requisitions can be sent to the API"
+        end
+        
+        api = Faraday.new(:url => $url) do |faraday|
             faraday.request     :url_encoded
             faraday.adapter     Faraday.default_adapter
         end
         if debug
-            api = Faraday.new(:url => url) do |faraday|
+            api = Faraday.new(:url => $url) do |faraday|
                 faraday.request     :url_encoded
                 faraday.adapter     Faraday.default_adapter
                 faraday.response    :logger
             end
         end
-        api.basic_auth user, pass
+        api.basic_auth $user, $pass
         
         sources = Array.new
         
@@ -160,7 +188,7 @@ class MCollective::Application::Provision<MCollective::Application
                     puts "ERROR: HTTP Status code was "+postResponse.status+".\n"
                 end
             else
-                puts "DEBUG: Sending node request to "+url+restPath+".\n\n"
+                puts "DEBUG: Sending node request to "+$url+restPath+".\n\n"
                 puts node+"\n\n"
             end
         end
@@ -174,7 +202,7 @@ class MCollective::Application::Provision<MCollective::Application
                     puts "ERROR: PUT response was "+putResp.status+".\n"
                 end
             else
-                puts "DEBUG: Sending import request to "+url+uri+".\n\n"
+                puts "DEBUG: Sending import request to "+$url+uri+".\n\n"
             end
         end
     end

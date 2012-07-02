@@ -1,6 +1,7 @@
 This is an MCollective application file which allows mcollective to generate a provisioning requisition for OpenNMS network management system.
 
 **PREREQUISITES**
+
 In order to provision nodes in OpenNMS using this tool, you must have already configured the *foreign source/provisioning group* for each node
 in OpenNMS. In the web UI, this is done by going into "Admin->Manage Provisioning Requisitions->Add New Group" and configuring the detectors 
 and policies. Failure to create the *foreign-id/provisioning group* before provisioning nodes with this tool will result in failed 

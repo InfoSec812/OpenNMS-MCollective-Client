@@ -36,6 +36,13 @@ ensure you are using the YAML based facts for mcollective as detailed at http://
     --user  : The username with which we will authenticate to the OpenNMS server
     --pass  : The password with which we will authenticate to the OpenNMS server
 
+You can avoid having to specify the URL, Username, and Password on the command-line using a personal ~/.mcollective client configuration and
+the following configuration options
+
+    plugin.provision.url=http://opennms.mycompany.com/opennms/rest/
+    plugin.provision.user=admin
+    plugin.provision.pass=admin
+
 All other mco filters work as expected.
 
 

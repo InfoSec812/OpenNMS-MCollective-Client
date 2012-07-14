@@ -1,3 +1,14 @@
+###########################################################################
+##                                                                       ##
+## Copyright (c) 2012, Joseph Phillips, All Rights Reserved              ##
+##                                                                       ##
+## This software released under the terms of the Modified BSD license.   ##
+## A file with the name LICENSE should have accompanied this software.   ##
+## The LICENSE file contains the details of the terms of software        ##
+## license.                                                              ##
+##                                                                       ##
+###########################################################################
+
 class MCollective::Application::Provision<MCollective::Application
     description "An application which generates an OpenNMS provisioning requisition based on command-line arguments, filters, and node facts"
 

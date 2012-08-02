@@ -114,34 +114,34 @@ class MCollective::Application::Provision<MCollective::Application
             ethAddr = facts['ipaddress_eth0']
             foreign_source = "default"
             node_label = facts['fqdn']
-            if facts['onms-categories']
-                categories = facts['onms-categories'].split(',')
+            if facts['onms_categories']
+                categories = facts['onms_categories'].split(',')
             else
                 categories = "Development".split(',')
             end
                         
-            if facts['onms-services']
-                services = facts['onms-services'].split(',')
+            if facts['onms_services']
+                services = facts['onms_services'].split(',')
             else
                 services = "ICMP,SNMP".split(',')
             end
             
-            if facts['onms-source']
-                foreign_source = facts['onms-source']
+            if facts['onms_source']
+                foreign_source = facts['onms_source']
             end
             
             if sources.index(foreign_source)==nil
                 sources.push(foreign_source)
             end
             
-            if facts['onms-label']
-                node_label = facts['onms-label']
+            if facts['onms_label']
+                node_label = facts['onms_label']
             end
             
             foreign_id = facts['fqdn']
             
-            if facts['onms-foreign-id']
-                foreign_id = facts['onms-foreign-id']
+            if facts['onms_foreign-id']
+                foreign_id = facts['onms_foreign_id']
             end
             
             response = api.get "requisitions/"+URI::encode(foreign_source)
@@ -155,9 +155,9 @@ class MCollective::Application::Provision<MCollective::Application
                 nodes.each do |node|
                     if (node.attr('node-label').strip==node_label)
                         if debug
-                            puts "DEBUG: Found existing node: "+node.attr('foreign-id').strip+"\n"
+                            puts "DEBUG: Found existing node: "+node.attr('foreign_id').strip+"\n"
                         end
-                        foreign_id = node.attr('foreign-id').strip
+                        foreign_id = node.attr('foreign_id').strip
                     end
                 end
             else 

@@ -19,12 +19,12 @@ ensure you are using the YAML based facts for mcollective as detailed at http://
 **EXAMPLE PUPPET CONFIG**
 
     node "mynode.mycompany.tld" {
-        $onms-source = "Web Servers"             ## The OpenNMS provisioning group that this node should be a part of
-        $onms-services = "ICMP,SNMP"             ## The comma separated list of services which should be monitored
-        $onms-categories = "Production,Servers"  ## A comma separated list of categories to assign this node to in OpenNMS
-        $onms-primary-interface = "eth0"         ## The interface which should be used for monitoring this node
-        $onms-label = "${hostname}.recur"        ## The label which should be used to identify this node in OpenNMS
-        $onms-foreign-id = "1327619063628"       ## Specify a foreign ID to use instead of the FQDN
+        $onms_source = "Web Servers"             ## The OpenNMS provisioning group that this node should be a part of
+        $onms_services = "ICMP,SNMP"             ## The comma separated list of services which should be monitored
+        $onms_categories = "Production,Servers"  ## A comma separated list of categories to assign this node to in OpenNMS
+        $onms_primary_interface = "eth0"         ## The interface which should be used for monitoring this node
+        $onms_label = "${hostname}.recur"        ## The label which should be used to identify this node in OpenNMS
+        $onms_foreign_id = "1327619063628"       ## Specify a foreign ID to use instead of the FQDN
 
         . . .
     }
